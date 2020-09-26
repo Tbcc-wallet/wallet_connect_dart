@@ -11,6 +11,14 @@ class WCEncryptionPayload {
     hmac = json['hmac'];
     iv = json['iv'];
   }
+
+  Map<String, dynamic> toJson() {
+    final res = <String, dynamic>{};
+    res['data'] = data;
+    res['hmac'] = hmac;
+    res['iv'] = iv;
+    return res;
+  }
 }
 
 class WCSocketMessage<T> {

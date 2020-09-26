@@ -23,34 +23,53 @@ class WCEncryptor {
   }
 
   WCEncryptionPayload encrypt(String data, String key) {
+    var keyBytes = hex.decode(key);
+    var dataBytes = utf8.encode(data);
     var iv = _secureRandom.nextBytes(16);
-    var cipher = StreamCipher('AES/CBC');
+    //var iv = hex.decode('7565e12b735feb336810abe823b72aad');
+    var cipher = CBCBlockCipher(AESFastEngine());
+
     cipher
       ..reset()
       ..init(
         true,
         ParametersWithIV(
-          //KeyParameter(hex.decode(key)),
-          KeyParameter(utf8.encode(key)),
+          KeyParameter(keyBytes),
           iv,
         ),
       );
-    var encrypted = cipher.process(utf8.encode(data));
+    var paddedData = _padIfRequired(dataBytes, cipher.blockSize);
+    final encrypted = Uint8List(paddedData.length);
 
-    var hmac = computeHMAC(encrypted, iv, utf8.encode(key));
-    return WCEncryptionPayload(data: hex.encode(encrypted), iv: hex.encode(iv), hmac: hmac);
+    var offset = 0;
+    while (offset < paddedData.length) {
+      offset += cipher.processBlock(paddedData, offset, encrypted, offset);
+    }
+    var hmac = computeHMAC(encrypted, iv, keyBytes);
+    var payload = WCEncryptionPayload(data: hex.encode(encrypted), iv: hex.encode(iv), hmac: hmac);
+
+    return payload;
+  }
+
+  Uint8List _padIfRequired(Uint8List origdata, int blockSize) {
+    var result = origdata;
+    var origDataSize = origdata.length;
+    var remainder = origDataSize % blockSize;
+    if (remainder != 0) {
+      var padded_data = List<int>.from(origdata);
+      padded_data.addAll(utf8.encode(('' * (blockSize - remainder))));
+      result = Uint8List.fromList(padded_data);
+    }
+    return result;
   }
 
   String decrypt(WCEncryptionPayload payload, String key) {
     var ivBytes = hex.decode(payload.iv);
-    print(payload.data);
 
     var dataBytes = hex.decode(payload.data);
-    print(dataBytes.length);
     var keyBytes = hex.decode(key);
     var computedHMAC = computeHMAC(dataBytes, ivBytes, keyBytes);
-    print(computedHMAC);
-    print(payload.hmac);
+
     if (computedHMAC != payload.hmac) {
       throw ArgumentError('invalid HMAC.');
     }

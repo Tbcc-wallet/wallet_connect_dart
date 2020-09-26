@@ -1,3 +1,4 @@
+import '../constants.dart';
 import 'WCPeerMeta.dart';
 
 class WCSessionRequestParam {
@@ -22,7 +23,7 @@ class WCSessionUpdateParam {
   }
 }
 
-class WCApproveSessionResponse {
+class WCApproveSessionResponse extends Jsonable {
   bool approved;
   int chainId;
   List<String> accounts;
@@ -36,4 +37,16 @@ class WCApproveSessionResponse {
     this.peerId,
     this.peerMeta,
   });
+
+  @override
+  Map<String, dynamic> toJson() {
+    final data = <String, dynamic>{};
+
+    data['approved'] = approved;
+    data['chainId'] = chainId;
+    data['accounts'] = accounts;
+    data['peerId'] = peerId;
+    data['peerMeta'] = peerMeta.toJson();
+    return data;
+  }
 }

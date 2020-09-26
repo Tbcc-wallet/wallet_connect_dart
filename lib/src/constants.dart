@@ -1,3 +1,7 @@
+class Jsonable {
+  Map<String, dynamic> toJson() {}
+}
+
 enum MessageType { pub, sub }
 enum WCInteractorState { connected, connecting, paused, disconnected }
 enum Error { badServerResponse, badJSONRPCRequest, sessionInvalid, sessionRequestTimeout, unknown }
