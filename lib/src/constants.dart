@@ -22,13 +22,16 @@ enum WCWevent {
 List<String> defaultMethods = [
   'wc_sessionRequest',
   'wc_sessionUpdate',
+//
   'eth_sign',
   'personal_sign',
   'eth_signTypedData',
   'eth_signTransaction',
   'eth_sendTransaction',
+//
   'bnb_sign',
   'bnb_tx_confirmation',
+//
   'trust_signTransaction',
   'get_accounts',
 ];

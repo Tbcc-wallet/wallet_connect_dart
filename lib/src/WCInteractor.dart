@@ -7,6 +7,8 @@ import 'package:wallet_connect/src/models/JSONRPCModels.dart';
 import 'package:wallet_connect/src/models/WCPeerMeta.dart';
 import 'package:wallet_connect/src/models/WCSessionModels.dart';
 import 'package:wallet_connect/src/models/WCSocetMessage.dart';
+import 'package:wallet_connect/src/models/ethereum/WCEthereumSignMessage.dart';
+import 'package:wallet_connect/src/models/ethereum/WCEthereumTransaction.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -29,6 +31,11 @@ class WCInteractor {
   Function(Error error) onDisconnect;
   Function(Error error) onError;
   Function(int id, Map<String, dynamic> request) onCustomRequest;
+
+  // eth requests handlers:
+  Function(int id, WCEthereumSignMessage) onEthSign;
+  Function(int id, WCEthereumTransaction) onEthSignTransaction;
+  Function(int id, WCEthereumTransaction) onEthSendTransaction;
 
   IOWebSocketChannel socket;
   int handshakeId;
@@ -60,7 +67,6 @@ class WCInteractor {
     subscribe(session.topic);
     subscribe(clientId);
 
-    socket.sink.add('ping');
     print('>>>> connected');
     state = WCInteractorState.connected;
   }
@@ -104,7 +110,7 @@ class WCInteractor {
         handshakeId = jsonrpc.id;
         peerId = jsonrpc.params.first.peerId;
         peerMeta = jsonrpc.params.first.peerMeta;
-        if (onSessionRequest != null) onSessionRequest(handshakeId, jsonrpc.params.first);
+        onSessionRequest?.call(handshakeId, jsonrpc.params.first);
         break;
       case 'wc_sessionUpdate':
         var params = WCSessionUpdateParam.fromJson(decrypted['params'].first);
@@ -112,6 +118,43 @@ class WCInteractor {
           disconnect();
         }
         break;
+
+      case 'eth_sign':
+        var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
+        if (jsonrpc.params.length < 2) {
+          throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+        }
+        onEthSign?.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.MESSAGE));
+        break;
+
+      case 'personal_sign':
+        var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
+        if (jsonrpc.params.length < 2) {
+          throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+        }
+        onEthSign?.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.PERSONAL_MESSAGE));
+        break;
+
+      case 'eth_signTypedData':
+        var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
+        if (jsonrpc.params.length < 2) {
+          throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+        }
+        onEthSign?.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.TYPED_MESSAGE));
+        break;
+
+      case 'eth_signTransaction':
+        var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
+
+        onEthSignTransaction?.call(jsonrpc.id, jsonrpc.params.first);
+        break;
+
+      case 'eth_sendTransaction':
+        var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
+
+        onEthSendTransaction?.call(jsonrpc.id, jsonrpc.params.first);
+        break;
+
       default:
     }
   }

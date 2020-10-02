@@ -26,41 +26,21 @@ class WCEncryptor {
     var keyBytes = hex.decode(key);
     var dataBytes = utf8.encode(data);
     var iv = _secureRandom.nextBytes(16);
-    //var iv = hex.decode('7565e12b735feb336810abe823b72aad');
-    var cipher = CBCBlockCipher(AESFastEngine());
 
-    cipher
-      ..reset()
-      ..init(
+    final paddedCipher = PaddedBlockCipherImpl(PKCS7Padding(), CBCBlockCipher(AESFastEngine()));
+    paddedCipher.init(
         true,
-        ParametersWithIV(
-          KeyParameter(keyBytes),
-          iv,
-        ),
-      );
-    var paddedData = _padIfRequired(dataBytes, cipher.blockSize);
-    final encrypted = Uint8List(paddedData.length);
+        PaddedBlockCipherParameters<ParametersWithIV<KeyParameter>, Null>(
+          ParametersWithIV<KeyParameter>(KeyParameter(keyBytes), iv),
+          null,
+        ));
 
-    var offset = 0;
-    while (offset < paddedData.length) {
-      offset += cipher.processBlock(paddedData, offset, encrypted, offset);
-    }
+    final encrypted = paddedCipher.process(dataBytes);
     var hmac = computeHMAC(encrypted, iv, keyBytes);
+
     var payload = WCEncryptionPayload(data: hex.encode(encrypted), iv: hex.encode(iv), hmac: hmac);
 
     return payload;
-  }
-
-  Uint8List _padIfRequired(Uint8List origdata, int blockSize) {
-    var result = origdata;
-    var origDataSize = origdata.length;
-    var remainder = origDataSize % blockSize;
-    if (remainder != 0) {
-      var padded_data = List<int>.from(origdata);
-      padded_data.addAll(utf8.encode(('' * (blockSize - remainder))));
-      result = Uint8List.fromList(padded_data);
-    }
-    return result;
   }
 
   String decrypt(WCEncryptionPayload payload, String key) {
@@ -80,7 +60,6 @@ class WCEncryptor {
       ..init(
         false,
         ParametersWithIV(
-          //KeyParameter(hex.decode(key)),
           KeyParameter(keyBytes),
           ivBytes,
         ),

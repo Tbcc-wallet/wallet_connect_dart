@@ -13,8 +13,9 @@ import 'package:web3dart/web3dart.dart';
 import 'package:wallet_connect/src/models/WCSessionModels.dart';
 
 main(List<String> args) async {
-  var str = 'wc:55609f3c-7bc6-49eb-9b7c-048a4fbf69b5@1?bridge=https%3A%2F%2Fbridge.walletconnect.org&key=304ed2b107ca3731f0d96300fa64e882e5d9045233a8861ac5a61ea39734d7b5';
+  var str = 'wc:219a6dea-7f22-471b-b452-a9ce5984dbb9@1?bridge=https%3A%2F%2Fbridge.walletconnect.org&key=79075affd77a26eb32f5cec18876b46247b6d6f9d859ceb11915d2a3483d52de';
   var privateKey = EthPrivateKey.fromHex('ba005cd605d8a02e3d5dfd04234cef3a3ee4f76bfbad2722d1fb5af8e12e6764');
+  
   var addr = await privateKey.extractAddress();
   var defaultChainId = 1;
   var session = WCSession.fromString(str);
@@ -26,12 +27,16 @@ main(List<String> args) async {
         ..icons = []
         ..description = '',
       clientId: Uuid().v4());
-  interactor.onSessionRequest = (_, __) {
+  interactor..onSessionRequest = (_, __) {
     interactor.approveSession(defaultChainId, [addr.hex]);
+  }..onEthSign = (id, params){
+    
+
   };
+
+
   await interactor.connect();
-  await Future.delayed(Duration(seconds: 5));
-  interactor.approveSession(defaultChainId, [addr.hex]);
+
   await Future.delayed(Duration(seconds: 20));
   return;
 
