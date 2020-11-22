@@ -213,4 +213,15 @@ class WCInteractor {
     state = WCInteractorState.disconnected;
     handshakeId = -1;
   }
+
+  void killSession() {
+    var result = WCApproveSessionResponse(
+      approved: false,
+      chainId: null,
+      accounts: null,
+    );
+    var jsonrpc = JSONRPCResponse(id: handshakeId, result: result);
+    encryptAndSend(json.encode(jsonrpc));
+    disconnect();
+  }
 }
