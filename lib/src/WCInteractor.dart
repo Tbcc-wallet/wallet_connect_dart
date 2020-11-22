@@ -6,7 +6,7 @@ import 'package:wallet_connect/src/constants.dart';
 import 'package:wallet_connect/src/models/JSONRPCModels.dart';
 import 'package:wallet_connect/src/models/WCPeerMeta.dart';
 import 'package:wallet_connect/src/models/WCSessionModels.dart';
-import 'package:wallet_connect/src/models/WCSocetMessage.dart';
+import 'package:wallet_connect/src/models/WCSocketMessage.dart';
 import 'package:wallet_connect/src/models/ethereum/WCEthereumSignMessage.dart';
 import 'package:wallet_connect/src/models/ethereum/WCEthereumTransaction.dart';
 import 'package:web_socket_channel/io.dart';
@@ -14,7 +14,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'WCEncryptor.dart';
 import 'constants.dart';
-import 'models/WCSocetMessage.dart';
+import 'models/WCSocketMessage.dart';
+import 'models/binance/WCBinanceSign.dart';
 
 class WCInteractor {
   WCSession session;
@@ -36,6 +37,10 @@ class WCInteractor {
   Function(int id, WCEthereumSignMessage) onEthSign;
   Function(int id, WCEthereumTransaction) onEthSignTransaction;
   Function(int id, WCEthereumTransaction) onEthSendTransaction;
+
+  // bnb requests handlers:
+  Function(int id, WCBinanceSign) onBnbSign;
+  Function(int id, WCBinanceSign) onBnbTxConfirmation;
 
   IOWebSocketChannel socket;
   int handshakeId;
@@ -155,6 +160,14 @@ class WCInteractor {
         onEthSendTransaction?.call(jsonrpc.id, jsonrpc.params.first);
         break;
 
+      case 'bnb_sign':
+        var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCBinanceSign.fromJson(decrypted['params'].first)]);
+
+        onBnbSign?.call(jsonrpc.id, jsonrpc.params.first);
+        break;
+
+      case 'bnb_tx_confirmation':
+        break;
       default:
     }
   }
@@ -179,6 +192,10 @@ class WCInteractor {
     var jsonrpc = JSONRPCResponse(id: handshakeId, result: result);
 
     encryptAndSend(json.encode(jsonrpc));
+  }
+
+  void approveRequest(result) {
+    encryptAndSend(json.encode(result));
   }
 
   void encryptAndSend(String data) {

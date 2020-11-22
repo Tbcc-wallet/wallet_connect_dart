@@ -4,7 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:convert/convert.dart';
 import 'package:pointycastle/export.dart';
-import 'package:wallet_connect/src/models/WCSocetMessage.dart';
+import 'package:wallet_connect/src/models/WCSocketMessage.dart';
 
 class WCEncryptor {
   static final _instance = WCEncryptor._();

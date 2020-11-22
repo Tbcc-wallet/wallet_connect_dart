@@ -1,5 +1,5 @@
 class Jsonable {
-  Map<String, dynamic> toJson() {}
+  dynamic toJson() {}
 }
 
 enum MessageType { pub, sub }

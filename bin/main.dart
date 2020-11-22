@@ -1,43 +1,119 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:pointycastle/digests/sha256.dart';
 import 'package:uuid/uuid.dart';
+import 'package:http/http.dart';
 import 'package:wallet_connect/src/WCEncryptor.dart';
 import 'package:wallet_connect/src/WCInteractor.dart';
 import 'package:wallet_connect/src/WCSession.dart';
 import 'package:wallet_connect/src/constants.dart';
-import 'package:wallet_connect/src/models/WCSocetMessage.dart';
+import 'package:wallet_connect/src/models/WCSocketMessage.dart';
 import 'package:wallet_connect/src/models/JSONRPCModels.dart';
 import 'package:wallet_connect/src/models/WCPeerMeta.dart';
+import 'package:wallet_connect/src/models/binance/WCBinanceSign.dart';
+import 'package:wallet_connect/src/models/ethereum/WCEthereumTransaction.dart';
+import 'package:web3dart/crypto.dart';
 import 'package:web3dart/web3dart.dart';
-
+import 'package:binance_chain/binance_chain.dart' as bc;
 import 'package:wallet_connect/src/models/WCSessionModels.dart';
+import 'package:convert/convert.dart';
+import 'package:binance_chain/src/utils/bip32core.dart' as bip32;
+import 'package:bip39/bip39.dart';
+
+class EthWallet {
+  EthPrivateKey privateKey;
+  EthereumAddress address;
+  EthWallet({this.privateKey, this.address});
+  static Future<EthWallet> fromPrivateKey(Web3Client w3client, String privateKeyHex) async {
+    var w = EthWallet();
+    w.privateKey = EthPrivateKey.fromHex(privateKeyHex);
+    w.address = await w.privateKey.extractAddress();
+    return w;
+  }
+
+  static Future<EthWallet> fromSeed(Web3Client w3client, Uint8List seed) async {
+    var bip32inst = bip32.BIP32.fromSeed(seed).derivePath("44'/60'/0'/0/0");
+    var privateKeyHex = hex.encode(bip32inst.privateKey);
+    return EthWallet.fromPrivateKey(w3client, privateKeyHex);
+  }
+
+  EthWallet.fromJson(Map<String, dynamic> json) {
+    privateKey = EthPrivateKey.fromHex(json['private_key']);
+    address = EthereumAddress.fromHex(json['address']);
+  }
+  Map<String, String> toJson() {
+    return <String, String>{'private_key': hex.encode(privateKey.privateKey), 'address': address.hex};
+  }
+}
 
 main(List<String> args) async {
-  var str = 'wc:219a6dea-7f22-471b-b452-a9ce5984dbb9@1?bridge=https%3A%2F%2Fbridge.walletconnect.org&key=79075affd77a26eb32f5cec18876b46247b6d6f9d859ceb11915d2a3483d52de';
-  var privateKey = EthPrivateKey.fromHex('ba005cd605d8a02e3d5dfd04234cef3a3ee4f76bfbad2722d1fb5af8e12e6764');
-  
-  var addr = await privateKey.extractAddress();
+  var str = 'wc:5e8a7a03-18c0-4a37-8584-08f0111b83c5@1?bridge=https%3A%2F%2Fbridge.walletconnect.org&key=a7155ef35952ba684dfb8a37039d000e5bd7cf3b8ce5389aa133e2fd8a3b6ecb';
+  //var privateKey = EthPrivateKey.fromHex('ba005cd605d8a02e3d5dfd04234cef3a3ee4f76bfbad2722d1fb5af8e12e6764');
+  var client = Web3Client('https://mainnet.infura.io/v3/919239cfe05943f38c7c16434c4e100e', Client());
+  var ethWallet = await EthWallet.fromSeed(client, mnemonicToSeed('leisure thumb smoke skull deputy axis ozone odor group remain roof pole citizen alcohol carbon include annual grain motion gravity baby nation silent wealth'));
+  var privateKey = ethWallet.privateKey;
+  //var s = await privateKey.sign(utf8.encode(json.encode(params.toJson())));
+  //print(hex.encode(s));
+  //var resp = JSONRPCResponse(id: id, result: WCEthereumTransactionSignature('0x' + hex.encode(s)));
+//
+  //interactor.approveRequest(resp);
+
+  var addr = ethWallet.address;
+
   var defaultChainId = 1;
   var session = WCSession.fromString(str);
   var interactor = WCInteractor(
       session: session,
       clientMeta: WCPeerMeta()
-        ..name = 'WalletConnect SDK'
-        ..url = 'https://github.com/TrustWallet/wallet-connect-swift'
+        ..name = 'WalletConnect SDK on DartLang'
+        ..url = 'https://tbcc.network/#/swap'
         ..icons = []
         ..description = '',
       clientId: Uuid().v4());
-  interactor..onSessionRequest = (_, __) {
-    interactor.approveSession(defaultChainId, [addr.hex]);
-  }..onEthSign = (id, params){
-    
+  interactor
+    ..onSessionRequest = (_, __) {
+      interactor.approveSession(defaultChainId, [addr.hex]);
+      //interactor.approveSession(defaultChainId, ['bnb1s76hyee7xvxksxlkc4whsmc3gxuqhrqvd3y0zm']);
+      //interactor.approveSession(defaultChainId, ['0xca6ea62e6c0f7a9989aaaee1546b12efb79fc946']);
+    }
+    ..onEthSign = (id, params) {}
+    ..onEthSendTransaction = (id, params) async {
+      var txHash = await client.sendTransaction(
+        privateKey,
+        Transaction(
+          to: EthereumAddress.fromHex(params.to),
+          maxGas: params.gas != null ? int.parse(params.gas.substring(2), radix: 16) : null,
+          data: params.data != null ? hexToBytes(params.data) : null,
+          gasPrice: params.gasPrice != null ? EtherAmount.fromUnitAndValue(EtherUnit.wei, int.parse(params.gasPrice.substring(2), radix: 16)) : null,
+          value: params.value != null ? EtherAmount.fromUnitAndValue(EtherUnit.wei, int.parse(params.value)) : null,
+        ),
+      );
+      var resp = JSONRPCResponse(id: id, result: WCEthereumTransactionResult(txHash));
+      interactor.approveRequest(resp);
+    }
+    ..onBnbSign = (id, params) async {
+      var w = bc.Wallet.fromMnemonicPhrase('leisure thumb smoke skull deputy axis ozone odor group remain roof pole citizen alcohol carbon include annual grain motion gravity baby nation silent wealth', bc.BinanceEnvironment.getProductionEnv());
+      await w.initialize_wallet();
 
-  };
+      params.sequence = w.sequence.toString();
+      print(params.toJsonString());
 
+      var resp = JSONRPCResponse(
+        id: id,
+        result: WCBinanceSignResult(
+          signature: hex.encode(w.sign_message(utf8.encode(params.toJsonString()))),
+          publicKey: w.publicKeyUncompressed,
+        ),
+      );
+
+      interactor.approveRequest(resp);
+    };
 
   await interactor.connect();
-
-  await Future.delayed(Duration(seconds: 20));
+//
+  //await Future.delayed(Duration(seconds: 20));
   return;
 
   // var iv = '7565e12b735feb336810abe823b72aad';
