@@ -46,7 +46,7 @@ class WCApproveSessionResponse extends Jsonable {
     data['chainId'] = chainId;
     data['accounts'] = accounts;
     data['peerId'] = peerId;
-    data['peerMeta'] = peerMeta.toJson();
+    data['peerMeta'] = peerMeta?.toJson();
     return data;
   }
 }
