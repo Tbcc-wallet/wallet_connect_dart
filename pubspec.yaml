@@ -10,7 +10,7 @@ dependencies:
   web_socket_channel: ^1.1.0
   pointycastle: ^1.0.2
   uuid: ^2.2.2
-  web3dart: ^1.2.3
+  web3dart: ^2.0.0-dev.9
   binance_chain:
     git: 
       url: https://github.com/Tbcc-wallet/binance_chain_dart.git
