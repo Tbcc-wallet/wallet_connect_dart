@@ -8,5 +8,5 @@ environment:
 
 dependencies:
   web_socket_channel: ^1.1.0
-  pointycastle: ^2.0.1
+  pointycastle: 
   uuid: ^2.2.2
