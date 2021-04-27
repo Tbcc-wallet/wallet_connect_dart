@@ -1,4 +1,4 @@
-import '../constants.dart';
+import '../../constants.dart';
 
 class WCEncryptionPayload {
   String data;
@@ -12,13 +12,11 @@ class WCEncryptionPayload {
     iv = json['iv'];
   }
 
-  Map<String, dynamic> toJson() {
-    final res = <String, dynamic>{};
-    res['data'] = data;
-    res['hmac'] = hmac;
-    res['iv'] = iv;
-    return res;
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'data': data,
+        'hmac': hmac,
+        'iv': iv,
+      };
 }
 
 class WCSocketMessage<T> {
@@ -28,11 +26,9 @@ class WCSocketMessage<T> {
 
   WCSocketMessage({this.topic, this.messageType, this.payload});
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
-      'topic': topic,
-      'type': messageType.toString().split('.').sublist(1).join(),
-      'payload': payload.toString(),
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'topic': topic,
+        'type': '$messageType'.split('.').sublist(1).join(),
+        'payload': '$payload',
+      };
 }

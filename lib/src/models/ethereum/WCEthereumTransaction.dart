@@ -1,5 +1,3 @@
-import 'package:wallet_connect/src/constants.dart';
-
 class WCEthereumTransaction {
   String from;
   String to;
@@ -32,25 +30,23 @@ class WCEthereumTransaction {
     data = json['data'];
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'from': from,
-      'to': to,
-      'nonce': nonce,
-      'gasPrice': gasPrice,
-      'gas': gas,
-      'gasLimit': gasLimit,
-      'value': value,
-      'data': data,
-    };
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'from': from,
+        'to': to,
+        'nonce': nonce,
+        'gasPrice': gasPrice,
+        'gas': gas,
+        'gasLimit': gasLimit,
+        'value': value,
+        'data': data,
+      };
 }
 
-class WCEthereumTransactionResult extends Jsonable {
+class WCEthereumTransactionResult {
   String hash;
   WCEthereumTransactionResult(this.hash);
-  @override
-  toJson() {
+
+  String toJson() {
     return hash;
   }
 }

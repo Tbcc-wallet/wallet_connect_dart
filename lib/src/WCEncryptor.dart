@@ -1,10 +1,9 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:convert/convert.dart';
 import 'package:pointycastle/export.dart';
-import 'package:wallet_connect/src/models/WCSocketMessage.dart';
+import 'package:wallet_connect/src/models/internal/WCSocketMessage.dart';
 
 class WCEncryptor {
   static final _instance = WCEncryptor._();
@@ -23,9 +22,9 @@ class WCEncryptor {
   }
 
   WCEncryptionPayload encrypt(String data, String key) {
-    var keyBytes = hex.decode(key);
-    var dataBytes = utf8.encode(data);
-    var iv = _secureRandom.nextBytes(16);
+    final keyBytes = hex.decode(key);
+    final dataBytes = utf8.encode(data);
+    final iv = _secureRandom.nextBytes(16);
 
     final paddedCipher = PaddedBlockCipherImpl(PKCS7Padding(), CBCBlockCipher(AESFastEngine()));
     paddedCipher.init(
@@ -36,25 +35,25 @@ class WCEncryptor {
         ));
 
     final encrypted = paddedCipher.process(dataBytes);
-    var hmac = computeHMAC(encrypted, iv, keyBytes);
+    final hmac = computeHMAC(encrypted, iv, keyBytes);
 
-    var payload = WCEncryptionPayload(data: hex.encode(encrypted), iv: hex.encode(iv), hmac: hmac);
+    final payload = WCEncryptionPayload(data: hex.encode(encrypted), iv: hex.encode(iv), hmac: hmac);
 
     return payload;
   }
 
   String decrypt(WCEncryptionPayload payload, String key) {
-    var ivBytes = hex.decode(payload.iv);
+    final ivBytes = hex.decode(payload.iv);
 
-    var dataBytes = hex.decode(payload.data);
-    var keyBytes = hex.decode(key);
-    var computedHMAC = computeHMAC(dataBytes, ivBytes, keyBytes);
+    final dataBytes = hex.decode(payload.data);
+    final keyBytes = hex.decode(key);
+    final computedHMAC = computeHMAC(dataBytes, ivBytes, keyBytes);
 
     if (computedHMAC != payload.hmac) {
       throw ArgumentError('invalid HMAC.');
     }
 
-    var cipher = CBCBlockCipher(AESFastEngine());
+    final cipher = CBCBlockCipher(AESFastEngine());
     cipher
       ..reset()
       ..init(
@@ -76,8 +75,8 @@ class WCEncryptor {
   }
 
   String computeHMAC(Uint8List payload, Uint8List iv, Uint8List key) {
-    var data = Uint8List(payload.length + iv.length)..setRange(0, payload.length, payload)..setRange(payload.length, payload.length + iv.length, iv);
-    var hmac = HMac(SHA256Digest(), 64)..init(KeyParameter(key));
+    final data = Uint8List(payload.length + iv.length)..setRange(0, payload.length, payload)..setRange(payload.length, payload.length + iv.length, iv);
+    final hmac = HMac(SHA256Digest(), 64)..init(KeyParameter(key));
     return hex.encode(hmac.process(data));
   }
 }

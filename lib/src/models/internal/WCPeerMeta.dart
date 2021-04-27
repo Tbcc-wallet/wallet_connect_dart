@@ -1,6 +1,4 @@
-import '../constants.dart';
-
-class WCPeerMeta extends Jsonable {
+class WCPeerMeta {
   String name;
   String url;
   String description;
@@ -15,13 +13,10 @@ class WCPeerMeta extends Jsonable {
     name = json['name'];
   }
 
-  @override
-  Map<String, dynamic> toJson() {
-    final data = <String, dynamic>{};
-    data['description'] = description;
-    data['url'] = url;
-    data['icons'] = icons ?? [];
-    data['name'] = name;
-    return data;
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'description': description,
+        'url': url,
+        'icons': icons ?? [],
+        'name': name,
+      };
 }

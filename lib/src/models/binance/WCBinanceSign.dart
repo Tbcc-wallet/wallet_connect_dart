@@ -1,7 +1,3 @@
-import 'dart:convert' as conv;
-
-import 'package:wallet_connect/src/constants.dart';
-
 class WCBinanceSign {
   String accountNumber;
   String chainId;
@@ -11,6 +7,7 @@ class WCBinanceSign {
 
   /// need to provide before toJsonString
   String sequence;
+
   String source = '1';
 
   WCBinanceSign.fromJson(Map<String, dynamic> json) {
@@ -21,30 +18,25 @@ class WCBinanceSign {
     msgsJson = json['msgs'];
   }
 
-  String toJsonString() {
-    return conv.json.encode({
-      'account_number': accountNumber,
-      'chain_id': chainId,
-      'data': data,
-      'memo': memo,
-      'msgs': msgsJson,
-      'sequence': sequence,
-      'source': source,
-    });
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'account_number': accountNumber,
+        'chain_id': chainId,
+        'data': data,
+        'memo': memo,
+        'msgs': msgsJson,
+        'sequence': sequence,
+        'source': source,
+      };
 }
 
-class WCBinanceSignResult extends Jsonable {
+class WCBinanceSignResult {
   String signature;
   String publicKey;
 
   WCBinanceSignResult({this.signature, this.publicKey});
 
-  @override
-  String toJson() {
-    return conv.json.encode({
-      'signature': signature,
-      'publicKey': publicKey,
-    });
-  }
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'signature': signature,
+        'publicKey': publicKey,
+      };
 }
