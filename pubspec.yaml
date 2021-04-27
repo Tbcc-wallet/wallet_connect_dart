@@ -1,7 +1,7 @@
 name: wallet_connect
-description: A starting point for Dart libraries or applications.
-# version: 1.0.0
-# homepage: https://www.example.com
+description: Dart implementation of WalletConnect Protocol.
+version: 1.0.0
+#homepage: https://www.example.com
 
 environment:
   sdk: '>=2.8.1 <2.12.0'
@@ -10,13 +10,3 @@ dependencies:
   web_socket_channel: ^1.1.0
   pointycastle: 2.0.0 
   uuid: ^2.2.2
-  
-  #binance_chain:
-  #  git: 
-  #    url: https://github.com/Tbcc-wallet/binance_chain_dart.git
-  #    ref: dev
-
-  
-dev_dependencies:
-  pedantic: ^1.9.0
-  test: ^1.14.4
