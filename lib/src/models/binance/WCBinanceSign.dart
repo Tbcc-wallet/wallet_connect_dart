@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class WCBinanceSign {
   String accountNumber;
   String chainId;
@@ -35,8 +37,8 @@ class WCBinanceSignResult {
 
   WCBinanceSignResult({this.signature, this.publicKey});
 
-  Map<String, dynamic> toJson() => <String, dynamic>{
+  String toJson() => json.encode(<String, dynamic>{
         'signature': signature,
         'publicKey': publicKey,
-      };
+      });
 }
