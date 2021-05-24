@@ -26,6 +26,8 @@ class WCInteractor {
   WCSession session;
   WCInteractorState state;
 
+  bool disconnectedManually;
+
   ///optional : uuid
   String clientId;
   WCPeerMeta clientMeta;
@@ -73,6 +75,7 @@ class WCInteractor {
     wcEventsLog('connecting....');
 
     socket = IOWebSocketChannel.connect(session.bridgeUrl);
+    disconnectedManually = false;
     socket.stream.listen(onReceiveMessage, onError: (err) {
       wcEventsLog(
         '<Socket Error>:\n'
@@ -83,12 +86,13 @@ class WCInteractor {
       onError?.call(err);
     }, onDone: () {
       if (socket.closeCode != 1000) {
-        wcEventsLog('DISCONNECTED WITH CODE: ${socket.closeCode}\n RECONNECTING....');
+        wcEventsLog('DISCONNECTED WITH CODE: ${socket.closeCode}\n');
         socket?.sink?.close();
-        socket = null;
         onDisconnect?.call(socket.closeCode, socket.closeReason);
-        if (autoreconnect == true) {
-          wcEventsLog('RECONNECT...');
+        socket = null;
+
+        if (autoreconnect == true && disconnectedManually == true) {
+          wcEventsLog('RECONNECTING...');
           connect();
         }
       }
@@ -133,80 +137,85 @@ class WCInteractor {
   }
 
   void handleEvent(String topic, String event, Map<String, dynamic> decrypted) {
-    switch (event) {
-      case 'wc_sessionRequest':
-        var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCSessionRequestParam.fromJson(decrypted['params'].first)]);
-        handshakeId = jsonrpc.id;
-        peerId = jsonrpc.params.first.peerId;
-        peerMeta = jsonrpc.params.first.peerMeta;
-        onSessionRequest?.call(handshakeId, jsonrpc.params.first);
-        break;
-      case 'wc_sessionUpdate':
-        var params = WCSessionUpdateParam.fromJson(decrypted['params'].first);
-        if (params.approved == false) {
-          disconnect();
-        }
-        break;
-
-      case 'eth_sign':
-        if (onEthSign != null) {
-          var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
-          if (jsonrpc.params.length < 2) {
-            throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+    try {
+      switch (event) {
+        case 'wc_sessionRequest':
+          var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCSessionRequestParam.fromJson(decrypted['params'].first)]);
+          handshakeId = jsonrpc.id;
+          peerId = jsonrpc.params.first.peerId;
+          peerMeta = jsonrpc.params.first.peerMeta;
+          onSessionRequest?.call(handshakeId, jsonrpc.params.first);
+          break;
+        case 'wc_sessionUpdate':
+          var params = WCSessionUpdateParam.fromJson(decrypted['params'].first);
+          if (params.approved == false) {
+            disconnect();
           }
-          onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.MESSAGE));
-        }
-        break;
+          break;
 
-      case 'personal_sign':
-        if (onEthSign != null) {
-          var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
-          if (jsonrpc.params.length < 2) {
-            throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+        case 'eth_sign':
+          if (onEthSign != null) {
+            var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
+            if (jsonrpc.params.length < 2) {
+              throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+            }
+            onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params.cast<String>(), WCSignType.MESSAGE));
           }
-          onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.PERSONAL_MESSAGE));
-        }
-        break;
+          break;
 
-      case 'eth_signTypedData':
-        if (onEthSign != null) {
-          var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
-          if (jsonrpc.params.length < 2) {
-            throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+        case 'personal_sign':
+          if (onEthSign != null) {
+            var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
+            if (jsonrpc.params.length < 2) {
+              throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+            }
+            onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params.cast<String>(), WCSignType.PERSONAL_MESSAGE));
           }
-          onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.TYPED_MESSAGE));
-        }
-        break;
+          break;
 
-      case 'eth_signTransaction':
-        if (onEthSignTransaction != null) {
-          var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
+        case 'eth_signTypedData':
+          if (onEthSign != null) {
+            var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
+            if (jsonrpc.params.length < 2) {
+              throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
+            }
+            onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.TYPED_MESSAGE));
+          }
+          break;
 
-          onEthSignTransaction?.call(jsonrpc.id, jsonrpc.params.first);
-        }
-        break;
+        case 'eth_signTransaction':
+          if (onEthSignTransaction != null) {
+            var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
 
-      case 'eth_sendTransaction':
-        if (onEthSendTransaction != null) {
-          var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
+            onEthSignTransaction?.call(jsonrpc.id, jsonrpc.params.first);
+          }
+          break;
 
-          onEthSendTransaction?.call(jsonrpc.id, jsonrpc.params.first);
-        }
-        break;
+        case 'eth_sendTransaction':
+          if (onEthSendTransaction != null) {
+            var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
 
-      case 'bnb_sign':
-        if (onBnbSign != null) {
-          var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCBinanceSign.fromJson(decrypted['params'].first)]);
+            onEthSendTransaction?.call(jsonrpc.id, jsonrpc.params.first);
+          }
+          break;
 
-          onBnbSign?.call(jsonrpc.id, jsonrpc.params.first);
-        }
-        break;
+        case 'bnb_sign':
+          if (onBnbSign != null) {
+            var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCBinanceSign.fromJson(decrypted['params'].first)]);
 
-      case 'bnb_tx_confirmation':
-        if (onBnbTxConfirmation != null) {
-          var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCBinanceTxConfirmation.fromJson(decrypted['params'].first)]);
-        }
-        break;
+            onBnbSign?.call(jsonrpc.id, jsonrpc.params.first);
+          }
+          break;
+
+        case 'bnb_tx_confirmation':
+          if (onBnbTxConfirmation != null) {
+            var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCBinanceTxConfirmation.fromJson(decrypted['params'].first)]);
+          }
+          break;
+      }
+    } catch (e, st) {
+      print(e);
+      print(st);
     }
   }
 
@@ -246,9 +255,12 @@ class WCInteractor {
   }
 
   void disconnect() {
+    disconnectedManually = true;
+
     socket.sink.close(1000);
     state = WCInteractorState.disconnected;
     handshakeId = -1;
+    onDisconnect?.call(null, null);
   }
 
   void killSession() {

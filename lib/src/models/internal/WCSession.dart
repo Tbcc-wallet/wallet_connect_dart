@@ -18,7 +18,7 @@ class WCSessionUpdateParam {
   WCSessionUpdateParam.fromJson(Map<String, dynamic> json) {
     approved = json['approved'];
     chainId = json['chainId'];
-    accounts = json['accounts'].cast<String>();
+    accounts = json['accounts']?.cast<String>();
   }
 }
 
