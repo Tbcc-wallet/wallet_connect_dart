@@ -1,12 +1,12 @@
 class JSONRPCRequest {
-  int id;
-  String jsonrpc = '2.0';
-  String method;
-  List<dynamic> params;
+  int? id;
+  String? jsonrpc = '2.0';
+  String? method;
+  List<dynamic>? params;
 
   JSONRPCRequest({this.id, this.method, this.params});
 
-  JSONRPCRequest.fromJson(Map<String, dynamic> json, List<dynamic> paramsList) {
+  JSONRPCRequest.fromJson(Map<String, dynamic> json, List<dynamic>? paramsList) {
     id = json['id'];
     jsonrpc = json['jsonrpc'];
     method = json['method'];
@@ -16,7 +16,7 @@ class JSONRPCRequest {
 
 class JSONRPCResponse {
   String jsonrpc = '2.0';
-  int id;
+  int? id;
   dynamic result;
 
   JSONRPCResponse({this.id, this.result});

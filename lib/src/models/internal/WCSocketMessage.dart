@@ -1,9 +1,9 @@
 import '../../constants.dart';
 
 class WCEncryptionPayload {
-  String data;
-  String hmac;
-  String iv;
+  String? data;
+  String? hmac;
+  String? iv;
   WCEncryptionPayload({this.data, this.hmac, this.iv});
 
   WCEncryptionPayload.fromJson(Map<String, dynamic> json) {
@@ -20,9 +20,9 @@ class WCEncryptionPayload {
 }
 
 class WCSocketMessage<T> {
-  String topic;
-  MessageType messageType;
-  T payload;
+  String? topic;
+  MessageType? messageType;
+  T? payload;
 
   WCSocketMessage({this.topic, this.messageType, this.payload});
 

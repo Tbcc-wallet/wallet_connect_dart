@@ -1,12 +1,12 @@
 class WCEthereumTransaction {
-  String from;
-  String to;
-  String nonce;
-  String gasPrice;
-  String gas;
-  String gasLimit;
-  String value;
-  String data;
+  String? from;
+  String? to;
+  String? nonce;
+  String? gasPrice;
+  String? gas;
+  String? gasLimit;
+  String? value;
+  String? data;
 
   WCEthereumTransaction({
     this.from,

@@ -1,9 +1,9 @@
 import 'WCPeerMeta.dart';
 
 class WCSessionRequestParam {
-  String peerId;
-  WCPeerMeta peerMeta;
-  int chainId;
+  String? peerId;
+  WCPeerMeta? peerMeta;
+  int? chainId;
   WCSessionRequestParam.fromJson(Map<String, dynamic> json) {
     peerId = json['peerId'];
     chainId = json['chainId'];
@@ -12,9 +12,9 @@ class WCSessionRequestParam {
 }
 
 class WCSessionUpdateParam {
-  bool approved;
-  int chainId;
-  List<String> accounts;
+  bool? approved;
+  int? chainId;
+  List<String>? accounts;
   WCSessionUpdateParam.fromJson(Map<String, dynamic> json) {
     approved = json['approved'];
     chainId = json['chainId'];
@@ -23,11 +23,11 @@ class WCSessionUpdateParam {
 }
 
 class WCApproveSessionResponse {
-  bool approved;
-  int chainId;
-  List<String> accounts;
-  String peerId;
-  WCPeerMeta peerMeta;
+  bool? approved;
+  int? chainId;
+  List<String>? accounts;
+  String? peerId;
+  WCPeerMeta? peerMeta;
 
   WCApproveSessionResponse({
     this.approved,

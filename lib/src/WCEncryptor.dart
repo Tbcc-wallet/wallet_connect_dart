@@ -7,8 +7,8 @@ import 'package:wallet_connect/src/models/internal/WCSocketMessage.dart';
 
 class WCEncryptor {
   static final _instance = WCEncryptor._();
-  Random _sGen;
-  SecureRandom _secureRandom;
+  late Random _sGen;
+  SecureRandom? _secureRandom;
 
   WCEncryptor._() {
     if (_secureRandom == null) {
@@ -24,17 +24,17 @@ class WCEncryptor {
   WCEncryptionPayload encrypt(String data, String key) {
     final keyBytes = hex.decode(key);
     final dataBytes = utf8.encode(data);
-    final iv = _secureRandom.nextBytes(16);
+    final iv = _secureRandom!.nextBytes(16);
 
     final paddedCipher = PaddedBlockCipherImpl(PKCS7Padding(), CBCBlockCipher(AESFastEngine()));
     paddedCipher.init(
         true,
         PaddedBlockCipherParameters<ParametersWithIV<KeyParameter>, Null>(
-          ParametersWithIV<KeyParameter>(KeyParameter(keyBytes), iv),
+          ParametersWithIV<KeyParameter>(KeyParameter(keyBytes as Uint8List), iv),
           null,
         ));
 
-    final encrypted = paddedCipher.process(dataBytes);
+    final encrypted = paddedCipher.process(dataBytes as Uint8List?);
     final hmac = computeHMAC(encrypted, iv, keyBytes);
 
     final payload = WCEncryptionPayload(data: hex.encode(encrypted), iv: hex.encode(iv), hmac: hmac);
@@ -43,11 +43,11 @@ class WCEncryptor {
   }
 
   String decrypt(WCEncryptionPayload payload, String key) {
-    final ivBytes = hex.decode(payload.iv);
+    final ivBytes = hex.decode(payload.iv!);
 
-    final dataBytes = hex.decode(payload.data);
+    final dataBytes = hex.decode(payload.data!);
     final keyBytes = hex.decode(key);
-    final computedHMAC = computeHMAC(dataBytes, ivBytes, keyBytes);
+    final computedHMAC = computeHMAC(dataBytes as Uint8List, ivBytes as Uint8List, keyBytes as Uint8List);
 
     if (computedHMAC != payload.hmac) {
       throw ArgumentError('invalid HMAC.');

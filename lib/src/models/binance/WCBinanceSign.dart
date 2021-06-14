@@ -1,14 +1,14 @@
 import 'dart:convert';
 
 class WCBinanceSign {
-  String accountNumber;
-  String chainId;
+  String? accountNumber;
+  String? chainId;
   dynamic data;
-  String memo;
-  List<dynamic> msgsJson;
+  String? memo;
+  List<dynamic>? msgsJson;
 
   /// need to provide before toJsonString
-  String sequence;
+  String? sequence;
 
   String source = '1';
 
@@ -32,8 +32,8 @@ class WCBinanceSign {
 }
 
 class WCBinanceSignResult {
-  String signature;
-  String publicKey;
+  String? signature;
+  String? publicKey;
 
   WCBinanceSignResult({this.signature, this.publicKey});
 

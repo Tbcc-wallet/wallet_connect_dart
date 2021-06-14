@@ -1,6 +1,6 @@
 class WCBinanceTxConfirmation {
-  bool ok;
-  String errorMessage;
+  bool? ok;
+  String? errorMessage;
 
   WCBinanceTxConfirmation.fromJson(Map<String, dynamic> json) {
     ok = json['ok'];

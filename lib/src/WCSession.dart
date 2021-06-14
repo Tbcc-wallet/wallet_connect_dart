@@ -1,8 +1,8 @@
 class WCSession {
-  String topic;
-  String version;
-  String bridgeUrl;
-  String key;
+  String? topic;
+  String? version;
+  String? bridgeUrl;
+  late String key;
   WCSession.fromString(String str) {
     if (!str.startsWith('wc:')) throw 'invalid string';
     str = str.replaceAll('wc:', '');

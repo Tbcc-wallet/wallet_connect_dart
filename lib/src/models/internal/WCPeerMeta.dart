@@ -1,8 +1,8 @@
 class WCPeerMeta {
-  String name;
-  String url;
-  String description;
-  List<String> icons;
+  String? name;
+  String? url;
+  String? description;
+  List<String>? icons;
 
   WCPeerMeta({this.description, this.url, this.icons, this.name});
 

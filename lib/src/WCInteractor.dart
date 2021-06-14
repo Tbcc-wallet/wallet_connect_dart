@@ -21,39 +21,39 @@ import 'models/binance/WCBinanceTxConfirmation.dart';
 class WCInteractor {
   bool debugLog;
 
-  bool autoreconnect;
+  bool? autoreconnect;
 
-  WCSession session;
-  WCInteractorState state;
+  WCSession? session;
+  WCInteractorState? state;
 
-  bool disconnectedManually;
+  bool? disconnectedManually;
 
   ///optional : uuid
-  String clientId;
-  WCPeerMeta clientMeta;
+  String? clientId;
+  WCPeerMeta? clientMeta;
 
   // TODO subinteractors
 
   //incoming event handlers:
-  Function(int id, WCSessionRequestParam peerParam) onSessionRequest;
-  Function(int closeCode, String closeReason) onDisconnect;
-  Function(dynamic error) onError;
-  Function(int id, Map<String, dynamic> request) onCustomRequest;
+  Function(int? id, WCSessionRequestParam peerParam)? onSessionRequest;
+  Function(int? closeCode, String? closeReason)? onDisconnect;
+  Function(dynamic error)? onError;
+  Function(int id, Map<String, dynamic> request)? onCustomRequest;
 
   // eth requests handlers:
-  Function(int id, WCEthereumSignMessage) onEthSign;
-  Function(int id, WCEthereumTransaction) onEthSignTransaction;
-  Function(int id, WCEthereumTransaction) onEthSendTransaction;
+  Function(int? id, WCEthereumSignMessage)? onEthSign;
+  Function(int? id, WCEthereumTransaction)? onEthSignTransaction;
+  Function(int? id, WCEthereumTransaction)? onEthSendTransaction;
 
   // bnb requests handlers:
-  Function(int id, WCBinanceSign) onBnbSign;
-  Function(int id, WCBinanceSign) onBnbTxConfirmation;
+  Function(int? id, WCBinanceSign)? onBnbSign;
+  Function(int id, WCBinanceSign)? onBnbTxConfirmation;
 
-  IOWebSocketChannel socket;
-  int handshakeId;
+  IOWebSocketChannel? socket;
+  int? handshakeId;
 
-  String peerId;
-  WCPeerMeta peerMeta;
+  String? peerId;
+  WCPeerMeta? peerMeta;
 
   WCInteractor({
     this.session,
@@ -64,31 +64,31 @@ class WCInteractor {
     state = WCInteractorState.disconnected;
   }
 
-  void wcEventsLog(String msg, [bool incoming = true]) {
+  void wcEventsLog(String? msg, [bool incoming = true]) {
     if (debugLog) log('${incoming ? '>>>>>' : '<<<<<'} : $msg');
   }
 
   bool connect() {
     if (socket?.sink != null) return true;
     state = WCInteractorState.connecting;
-    wcEventsLog(session.bridgeUrl);
+    wcEventsLog(session!.bridgeUrl);
     wcEventsLog('connecting....');
 
-    socket = IOWebSocketChannel.connect(session.bridgeUrl);
+    socket = IOWebSocketChannel.connect(session!.bridgeUrl!);
     disconnectedManually = false;
-    socket.stream.listen(onReceiveMessage, onError: (err) {
+    socket!.stream.listen(onReceiveMessage, onError: (err) {
       wcEventsLog(
         '<Socket Error>:\n'
-        '  close code: ${socket.closeCode}\n'
-        '  close code: ${socket.closeReason}\n'
+        '  close code: ${socket!.closeCode}\n'
+        '  close code: ${socket!.closeReason}\n'
         '  error msg: $err',
       );
       onError?.call(err);
     }, onDone: () {
-      if (socket.closeCode != 1000) {
-        wcEventsLog('DISCONNECTED WITH CODE: ${socket.closeCode}\n');
-        socket?.sink?.close();
-        onDisconnect?.call(socket.closeCode, socket.closeReason);
+      if (socket!.closeCode != 1000) {
+        wcEventsLog('DISCONNECTED WITH CODE: ${socket!.closeCode}\n');
+        socket?.sink.close();
+        onDisconnect?.call(socket!.closeCode, socket!.closeReason);
         socket = null;
 
         if (autoreconnect == true && disconnectedManually == true) {
@@ -97,7 +97,7 @@ class WCInteractor {
         }
       }
     });
-    subscribe(session.topic);
+    subscribe(session!.topic);
     subscribe(clientId);
 
     wcEventsLog('connected');
@@ -115,18 +115,18 @@ class WCInteractor {
     }
 
     if (msg.runtimeType is String) {
-      if (msg == 'text') socket.sink.add('');
+      if (msg == 'text') socket!.sink.add('');
       wcEventsLog('pong', false);
     } else {
       var topic = msg['topic'];
 
       var payload = WCEncryptionPayload.fromJson(json.decode(msg['payload']));
 
-      var decrypted = WCEncryptor().decrypt(payload, session.key);
+      var decrypted = WCEncryptor().decrypt(payload, session!.key);
       var decoded_json = json.decode(decrypted);
 
       wcEventsLog('decrypted: $decrypted');
-      var method = decoded_json['method'] as String;
+      var method = decoded_json['method'] as String?;
 
       if (defaultMethods.contains(method)) {
         handleEvent(topic, method, decoded_json);
@@ -136,15 +136,15 @@ class WCInteractor {
     }
   }
 
-  void handleEvent(String topic, String event, Map<String, dynamic> decrypted) {
+  void handleEvent(String? topic, String? event, Map<String, dynamic> decrypted) {
     try {
       switch (event) {
         case 'wc_sessionRequest':
           var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCSessionRequestParam.fromJson(decrypted['params'].first)]);
           handshakeId = jsonrpc.id;
-          peerId = jsonrpc.params.first.peerId;
-          peerMeta = jsonrpc.params.first.peerMeta;
-          onSessionRequest?.call(handshakeId, jsonrpc.params.first);
+          peerId = jsonrpc.params!.first.peerId;
+          peerMeta = jsonrpc.params!.first.peerMeta;
+          onSessionRequest?.call(handshakeId, jsonrpc.params!.first);
           break;
         case 'wc_sessionUpdate':
           var params = WCSessionUpdateParam.fromJson(decrypted['params'].first);
@@ -156,30 +156,30 @@ class WCInteractor {
         case 'eth_sign':
           if (onEthSign != null) {
             var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
-            if (jsonrpc.params.length < 2) {
+            if (jsonrpc.params!.length < 2) {
               throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
             }
-            onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params.cast<String>(), WCSignType.MESSAGE));
+            onEthSign!.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params!.cast<String>(), WCSignType.MESSAGE));
           }
           break;
 
         case 'personal_sign':
           if (onEthSign != null) {
             var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
-            if (jsonrpc.params.length < 2) {
+            if (jsonrpc.params!.length < 2) {
               throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
             }
-            onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params.cast<String>(), WCSignType.PERSONAL_MESSAGE));
+            onEthSign!.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params!.cast<String>(), WCSignType.PERSONAL_MESSAGE));
           }
           break;
 
         case 'eth_signTypedData':
           if (onEthSign != null) {
             var jsonrpc = JSONRPCRequest.fromJson(decrypted, decrypted['params']);
-            if (jsonrpc.params.length < 2) {
+            if (jsonrpc.params!.length < 2) {
               throw ArgumentError('invalid jsonrpc params; request id: ${jsonrpc.id}');
             }
-            onEthSign.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.TYPED_MESSAGE));
+            onEthSign!.call(jsonrpc.id, WCEthereumSignMessage(jsonrpc.params, WCSignType.TYPED_MESSAGE));
           }
           break;
 
@@ -187,7 +187,7 @@ class WCInteractor {
           if (onEthSignTransaction != null) {
             var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
 
-            onEthSignTransaction?.call(jsonrpc.id, jsonrpc.params.first);
+            onEthSignTransaction?.call(jsonrpc.id, jsonrpc.params!.first);
           }
           break;
 
@@ -195,7 +195,7 @@ class WCInteractor {
           if (onEthSendTransaction != null) {
             var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCEthereumTransaction.fromJson(decrypted['params'].first)]);
 
-            onEthSendTransaction?.call(jsonrpc.id, jsonrpc.params.first);
+            onEthSendTransaction?.call(jsonrpc.id, jsonrpc.params!.first);
           }
           break;
 
@@ -203,7 +203,7 @@ class WCInteractor {
           if (onBnbSign != null) {
             var jsonrpc = JSONRPCRequest.fromJson(decrypted, [WCBinanceSign.fromJson(decrypted['params'].first)]);
 
-            onBnbSign?.call(jsonrpc.id, jsonrpc.params.first);
+            onBnbSign?.call(jsonrpc.id, jsonrpc.params!.first);
           }
           break;
 
@@ -220,15 +220,15 @@ class WCInteractor {
   }
 
   //void handleCustomRequest(Map<String, dynamic> decrypted) {}
-  void subscribe(String topic) {
+  void subscribe(String? topic) {
     var message = WCSocketMessage(topic: topic, messageType: MessageType.sub, payload: '');
 
-    socket.sink.add(json.encode(message));
+    socket!.sink.add(json.encode(message));
     wcEventsLog('subscribe: ${json.encode(message)}');
   }
 
   void approveSession(int chainId, List<String> accounts) {
-    if (handshakeId <= 0) throw Exception('Invalid session');
+    if (handshakeId! <= 0) throw Exception('Invalid session');
     var result = WCApproveSessionResponse(
       approved: true,
       chainId: chainId,
@@ -247,17 +247,17 @@ class WCInteractor {
 
   void encryptAndSend(String data) {
     wcEventsLog('to encrypt: $data', false);
-    var payload = WCEncryptor().encrypt(data, session.key);
-    var message = WCSocketMessage(messageType: MessageType.pub, payload: json.encode(payload), topic: peerId ?? session.topic);
+    var payload = WCEncryptor().encrypt(data, session!.key);
+    var message = WCSocketMessage(messageType: MessageType.pub, payload: json.encode(payload), topic: peerId ?? session!.topic);
     var msgstr = json.encode(message);
     wcEventsLog('msg str sent: $msgstr', false);
-    socket.sink.add(msgstr);
+    socket!.sink.add(msgstr);
   }
 
   void disconnect() {
     disconnectedManually = true;
 
-    socket.sink.close(1000);
+    socket!.sink.close(1000);
     state = WCInteractorState.disconnected;
     handshakeId = -1;
     onDisconnect?.call(null, null);
